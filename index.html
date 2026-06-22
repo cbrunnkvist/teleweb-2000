@@ -464,6 +464,25 @@ const ledHold = document.getElementById('led-hold');
 const statusBar = document.getElementById('statusBar');
 
 let gsmSamples = [];
+let shuffledQueue = [];
+let queueIndex = 0;
+
+function shuffleArray(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function nextSample() {
+  if (queueIndex >= shuffledQueue.length) {
+    shuffledQueue = shuffleArray(gsmSamples);
+    queueIndex = 0;
+  }
+  return shuffledQueue[queueIndex++];
+}
 
 function setStatus(msg) {
   statusBar.textContent = msg;
@@ -501,10 +520,12 @@ async function loadSampleList() {
     const resp = await fetch('samples.json');
     if (resp.ok) {
       gsmSamples = await resp.json();
+      shuffledQueue = shuffleArray(gsmSamples);
     }
   } catch (e) {
     console.error('Could not load sample list:', e);
     gsmSamples = ['AEP.gsm', 'bosspass.gsm', 'CONED2.gsm', 'pge.gsm', 'SCE.gsm', 'SAN_DIEGO.gsm', 'SDGE1.gsm', 'PSEG.gsm', 'APS.gsm', 'GENERAL-RECORDING.gsm'];
+    shuffledQueue = shuffleArray(gsmSamples);
   }
 }
 
@@ -803,7 +824,7 @@ async function makeCall() {
     }, 80);
 
     // PHASE 4: PLAY RANDOM UTILITY SAMPLE
-    const sampleName = gsmSamples[Math.floor(Math.random() * gsmSamples.length)];
+    const sampleName = nextSample();
     setStatus('Connected: ' + sampleName);
 
     try {
