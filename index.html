@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TeleWeb 2000 — Y2K Desktop IP Phone</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+  :root {
+    --beige: #d4c4a8;
+    --dark-beige: #b8a88a;
+    --lcd-bg: #7a8b6e;
+    --lcd-text: #2a3325;
+    --silver: #c0c0c0;
+    --dark-silver: #909090;
+    --btn-face: #e8e0d0;
+    --btn-shadow: #a09888;
+    --red-led: #ff3333;
+    --green-led: #33cc33;
+    --orange-led: #ffaa00;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background: #1a1a2e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'VT323', monospace;
+  }
+
+  .desk {
+    background: #2a2a3e;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.3);
+    position: relative;
+    /* size to content, no max-width constraint */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+  }
+
+  .desk::before {
+    content: '';
+    position: absolute;
+    top: 10px; left: 10px; right: 10px; bottom: 10px;
+    border: 2px dashed #3a3a4e;
+    border-radius: 12px;
+    pointer-events: none;
+  }
+
+  /* Scale the phone to fit viewport */
+  .phone-wrapper {
+    width: 520px;
+    transform-origin: center center;
+    transition: transform 0.2s ease;
+    /* ensure wrapper itself is centered in flex parent */
+    display: block;
+    text-align: center;
+  }
+
+  .phone {
+    width: 520px;
+    background: var(--beige);
+    border-radius: 24px 24px 32px 32px;
+    padding: 18px 22px;
+    box-shadow:
+      0 15px 0 var(--dark-beige),
+      0 25px 40px rgba(0,0,0,0.4),
+      inset 0 2px 4px rgba(255,255,255,0.3);
+    position: relative;
+    transform: perspective(800px) rotateX(3deg);
+    transition: transform 0.3s ease;
+  }
+
+  .phone:hover { transform: perspective(800px) rotateX(0deg); }
+
+  .brand-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 8px 8px;
+    border-bottom: 2px solid var(--dark-beige);
+    margin-bottom: 10px;
+  }
+
+  .brand-name {
+    font-size: 18px;
+    color: #5a4a3a;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow: 1px 1px 0 rgba(255,255,255,0.4);
+  }
+
+  .led-cluster { display: flex; gap: 8px; }
+
+  .led {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #444;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+    transition: all 0.2s;
+  }
+
+  .led.active-red { background: var(--red-led); box-shadow: 0 0 8px var(--red-led); }
+  .led.active-green { background: var(--green-led); box-shadow: 0 0 8px var(--green-led); }
+  .led.active-orange { background: var(--orange-led); box-shadow: 0 0 8px var(--orange-led); }
+
+  .lcd-frame {
+    background: var(--dark-silver);
+    border-radius: 8px;
+    padding: 6px;
+    margin-bottom: 12px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.2);
+  }
+
+  .lcd {
+    background: var(--lcd-bg);
+    border-radius: 4px;
+    padding: 10px 14px;
+    min-height: 64px;
+    font-family: 'VT323', monospace;
+    font-size: 26px;
+    color: var(--lcd-text);
+    text-shadow: 0 0 2px rgba(42,51,37,0.5);
+    letter-spacing: 2px;
+    line-height: 1.3;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .lcd::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+  }
+
+  .lcd .cursor {
+    display: inline-block;
+    width: 12px;
+    height: 20px;
+    background: var(--lcd-text);
+    animation: blink 1s step-end infinite;
+    vertical-align: bottom;
+    margin-left: 2px;
+  }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .scrolling-marquee { white-space: nowrap; overflow: hidden; }
+  .scrolling-marquee span {
+    display: inline-block;
+    animation: marquee 8s linear infinite;
+    padding-left: 100%;
+  }
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+  }
+
+  .softkeys {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .softkey {
+    padding: 6px 4px;
+    background: var(--silver);
+    border: none;
+    border-radius: 6px;
+    font-family: 'VT323', monospace;
+    font-size: 13px;
+    color: #3a3a3a;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--dark-silver), 0 5px 8px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.4);
+    transition: all 0.08s;
+  }
+
+  .softkey:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 var(--dark-silver), inset 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  /* Rectangular keys like vintage IP phones */
+  .key {
+    height: 44px;
+    background: var(--btn-face);
+    border: none;
+    border-radius: 10px;
+    font-family: 'VT323', monospace;
+    font-size: 24px;
+    color: #4a4035;
+    cursor: pointer;
+    box-shadow:
+      0 5px 0 var(--btn-shadow),
+      0 7px 10px rgba(0,0,0,0.2),
+      inset 0 1px 2px rgba(255,255,255,0.6);
+    transition: all 0.08s;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    user-select: none;
+    padding: 0 12px;
+  }
+
+  .key:active {
+    transform: translateY(5px);
+    box-shadow: 0 0 0 var(--btn-shadow), inset 0 2px 6px rgba(0,0,0,0.2);
+  }
+
+  .key .sub {
+    font-size: 10px;
+    color: #8a8075;
+    letter-spacing: 1px;
+  }
+
+  .receiver-slot {
+    background: var(--dark-beige);
+    border-radius: 12px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: inset 0 3px 8px rgba(0,0,0,0.3);
+  }
+
+  .cta-btn {
+    background: linear-gradient(180deg, #55cc55 0%, #33aa33 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 24px;
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 5px 0 #1a661a, 0 7px 12px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3);
+    transition: all 0.1s;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-btn::before { content: '\260E'; margin-right: 6px; }
+
+  .cta-btn:hover { filter: brightness(1.1); }
+  .cta-btn:active {
+    transform: translateY(5px);
+    box-shadow: 0 0 0 #1a661a, inset 0 2px 6px rgba(0,0,0,0.3);
+  }
+  .cta-btn.calling {
+    background: linear-gradient(180deg, #cc4444 0%, #aa2222 100%);
+    box-shadow: 0 5px 0 #661a1a, 0 7px 12px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3);
+  }
+  .cta-btn.calling:active { box-shadow: 0 0 0 #661a1a, inset 0 2px 6px rgba(0,0,0,0.3); }
+
+  .cable {
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 40px;
+    background: #222;
+    border-radius: 0 0 6px 6px;
+    box-shadow: inset 0 0 4px rgba(255,255,255,0.1);
+  }
+
+  .sticker {
+    position: absolute;
+    top: 60px;
+    right: -50px;
+    background: #ffee55;
+    color: #333;
+    padding: 6px 10px;
+    font-size: 12px;
+    transform: rotate(12deg);
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+    border-radius: 4px;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 11px;
+    color: #7a6a5a;
+    letter-spacing: 1px;
+  }
+
+  .watermark {
+    position: absolute;
+    bottom: -40px;
+    right: 0;
+    font-size: 10px;
+    color: #555;
+    opacity: 0.5;
+  }
+
+  .status-bar {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #0f0;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: 'VT323', monospace;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 100;
+  }
+  .status-bar.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="status-bar" id="statusBar">Loading WASM decoder...</div>
+
+<div class="desk">
+  <div class="phone-wrapper" id="phoneWrapper">
+    <div class="phone" id="phone">
+      <div class="brand-strip">
+        <div class="brand-name">TeleWeb 2000</div>
+        <div class="led-cluster">
+          <div class="led" id="led-msg"></div>
+          <div class="led" id="led-hold"></div>
+          <div class="led active-green" id="led-pwr"></div>
+        </div>
+      </div>
+
+      <div class="lcd-frame">
+        <div class="lcd" id="lcd">
+          <div class="scrolling-marquee"><span>*** WELCOME TO TELEWEB 2000 *** READY TO DIAL *** </span></div>
+        </div>
+      </div>
+
+      <div class="softkeys">
+        <button class="softkey" onclick="keyPress('REDIAL')">REDIAL</button>
+        <button class="softkey" onclick="keyPress('HOLD')">HOLD</button>
+        <button class="softkey" onclick="keyPress('CONF')">CONF</button>
+        <button class="softkey" onclick="keyPress('TRANS')">TRANS</button>
+      </div>
+
+      <div class="keypad">
+        <button class="key" data-key="1" data-low="697" data-high="1209">1<span class="sub">&nbsp;</span></button>
+        <button class="key" data-key="2" data-low="697" data-high="1336">2<span class="sub">ABC</span></button>
+        <button class="key" data-key="3" data-low="697" data-high="1477">3<span class="sub">DEF</span></button>
+        <button class="key" data-key="4" data-low="770" data-high="1209">4<span class="sub">GHI</span></button>
+        <button class="key" data-key="5" data-low="770" data-high="1336">5<span class="sub">JKL</span></button>
+        <button class="key" data-key="6" data-low="770" data-high="1477">6<span class="sub">MNO</span></button>
+        <button class="key" data-key="7" data-low="852" data-high="1209">7<span class="sub">PQRS</span></button>
+        <button class="key" data-key="8" data-low="852" data-high="1336">8<span class="sub">TUV</span></button>
+        <button class="key" data-key="9" data-low="852" data-high="1477">9<span class="sub">WXYZ</span></button>
+        <button class="key" data-key="*" data-low="941" data-high="1209">*<span class="sub">&nbsp;</span></button>
+        <button class="key" data-key="0" data-low="941" data-high="1336">0<span class="sub">+</span></button>
+        <button class="key" data-key="#" data-low="941" data-high="1477">#<span class="sub">&nbsp;</span></button>
+      </div>
+
+      <div class="receiver-slot">
+        <button class="cta-btn" id="ctaBtn" onclick="makeCall()">Pick up and make a call</button>
+      </div>
+
+      <div class="cable"></div>
+      <div class="footer">MODEL: TW2K-IP /// FW: v1.04 /// WASM DECODER</div>
+    </div>
+  </div>
+
+  <div class="sticker">Y2K CERTIFIED</div>
+  <div class="watermark">gsm-recordings // 2026</div>
+</div>
+
+<script src="gsm_decoder.js"></script>
+<script>
+// ========================================================================
+// Viewport scaling: keep phone vertically fitted
+// ========================================================================
+function fitPhoneToViewport() {
+  const phone = document.getElementById('phone');
+  const wrapper = document.getElementById('phoneWrapper');
+  if (!phone || !wrapper) return;
+
+  // Measure NATURAL (unscaled) dimensions via offsetWidth/offsetHeight.
+  // getBoundingClientRect() returns post-transform visual bounds and creates
+  // a feedback loop on resize — never use it for scale calculations.
+  const naturalW = phone.offsetWidth;
+  const naturalH = phone.offsetHeight;
+
+  const vh = window.innerHeight;
+  const vw = window.innerWidth;
+
+  // Leave some breathing room around the edges
+  const padY = 40;
+  const padX = 40;
+
+  const scaleY = (vh - padY * 2) / naturalH;
+  const scaleX = (vw - padX * 2) / naturalW;
+
+  // Fit vertically first, but also make sure we don't overflow horizontally.
+  // Never upscale (scale > 1).
+  const scale = Math.min(1, scaleY, scaleX);
+
+  wrapper.style.transform = 'scale(' + scale.toFixed(5) + ')';
+}
+
+window.addEventListener('resize', fitPhoneToViewport);
+window.addEventListener('orientationchange', fitPhoneToViewport);
+// Initial fit after a short delay to let layout settle
+setTimeout(fitPhoneToViewport, 50);
+
+// ========================================================================
+// GSM 06.10 WASM Decoder Integration
+// ========================================================================
+
+let gsmModule = null;
+let gsmCreateFn = null;
+let gsmDecodeFn = null;
+let gsmDestroyFn = null;
+let isCalling = false;
+let dialString = '';
+let currentAudioBuffer = null;
+let audioCtx = null;
+
+const lcd = document.getElementById('lcd');
+const ctaBtn = document.getElementById('ctaBtn');
+const ledMsg = document.getElementById('led-msg');
+const ledHold = document.getElementById('led-hold');
+const statusBar = document.getElementById('statusBar');
+
+let gsmSamples = [];
+
+function setStatus(msg) {
+  statusBar.textContent = msg;
+  statusBar.classList.add('visible');
+  setTimeout(() => statusBar.classList.remove('visible'), 3000);
+}
+
+async function loadWASM() {
+  setStatus('Loading WASM decoder...');
+  try {
+    // Wait for GSMModule to be defined (script may still be loading)
+    let attempts = 0;
+    while (typeof GSMModule === 'undefined' && attempts < 50) {
+      await new Promise(r => setTimeout(r, 50));
+      attempts++;
+    }
+    if (typeof GSMModule === 'undefined') {
+      throw new Error('GSMModule script did not load');
+    }
+    const module = await GSMModule();
+    gsmModule = module;
+    gsmCreateFn = module.cwrap('wasm_gsm_create', 'number', []);
+    gsmDecodeFn = module.cwrap('wasm_gsm_decode', 'number', ['number', 'number', 'number']);
+    gsmDestroyFn = module.cwrap('wasm_gsm_destroy', null, ['number']);
+    setStatus('WASM decoder ready!');
+    console.log('GSM WASM decoder loaded');
+  } catch (e) {
+    console.error('Failed to load WASM:', e);
+    setStatus('WASM load failed: ' + e.message);
+  }
+}
+
+async function loadSampleList() {
+  try {
+    const resp = await fetch('samples.json');
+    if (resp.ok) {
+      gsmSamples = await resp.json();
+    }
+  } catch (e) {
+    console.error('Could not load sample list:', e);
+    gsmSamples = ['AEP.gsm', 'bosspass.gsm', 'CONED2.gsm', 'pge.gsm', 'SCE.gsm', 'SAN_DIEGO.gsm', 'SDGE1.gsm', 'PSEG.gsm', 'APS.gsm', 'GENERAL-RECORDING.gsm'];
+  }
+}
+
+function decodeGSM(gsmData) {
+  if (!gsmModule || !gsmCreateFn) {
+    throw new Error('WASM module not loaded');
+  }
+
+  const frameSize = 33;
+  const samplesPerFrame = 160;
+  const numFrames = Math.floor(gsmData.length / frameSize);
+  const totalSamples = numFrames * samplesPerFrame;
+
+  const state = gsmCreateFn();
+  if (!state) throw new Error('Failed to create GSM decoder state');
+
+  const outputPtr = gsmModule._malloc(samplesPerFrame * 2);
+  const pcmSamples = new Int16Array(totalSamples);
+
+  try {
+    for (let i = 0; i < numFrames; i++) {
+      const frame = gsmData.subarray(i * frameSize, (i + 1) * frameSize);
+      // ccall with 'array' type auto-copies frame to WASM memory
+      gsmModule.ccall('wasm_gsm_decode', 'number',
+        ['number', 'array', 'number'],
+        [state, frame, outputPtr]
+      );
+      for (let s = 0; s < samplesPerFrame; s++) {
+        pcmSamples[i * samplesPerFrame + s] = gsmModule.getValue(outputPtr + s * 2, 'i16');
+      }
+    }
+  } finally {
+    gsmModule._free(outputPtr);
+    gsmDestroyFn(state);
+  }
+
+  return pcmSamples;
+}
+
+function buildWAV(pcmData, sampleRate) {
+  sampleRate = sampleRate || 8000;
+  const numChannels = 1;
+  const bytesPerSample = 2;
+  const dataSize = pcmData.length * bytesPerSample;
+  const headerSize = 44;
+  const buffer = new ArrayBuffer(headerSize + dataSize);
+  const view = new DataView(buffer);
+
+  function writeString(off, str) {
+    for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i));
+  }
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
+  view.setUint16(32, numChannels * bytesPerSample, true);
+  view.setUint16(34, 16, true);
+  writeString(36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  const pcmView = new Int16Array(buffer, 44);
+  pcmView.set(pcmData);
+
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+// ========================================================================
+// DTMF Tone Generator — real-time Web Audio API
+// ========================================================================
+
+const DTMF_FREQ = {
+  '1': { low: 697,  high: 1209 },
+  '2': { low: 697,  high: 1336 },
+  '3': { low: 697,  high: 1477 },
+  '4': { low: 770,  high: 1209 },
+  '5': { low: 770,  high: 1336 },
+  '6': { low: 770,  high: 1477 },
+  '7': { low: 852,  high: 1209 },
+  '8': { low: 852,  high: 1336 },
+  '9': { low: 852,  high: 1477 },
+  '*': { low: 941,  high: 1209 },
+  '0': { low: 941,  high: 1336 },
+  '#': { low: 941,  high: 1477 }
+};
+
+class DTMFToneGenerator {
+  constructor() {
+    this.ctx = null;
+    this.activeKey = null;
+    this.oscLow = null;
+    this.oscHigh = null;
+    this.gain = null;
+  }
+
+  _ensureCtx() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+
+  start(key) {
+    if (!DTMF_FREQ[key]) return;
+    this._ensureCtx();
+    if (this.activeKey === key) return; // already playing this key
+    this.stop(); // stop any previous tone
+
+    const t = this.ctx.currentTime;
+    const { low, high } = DTMF_FREQ[key];
+
+    this.gain = this.ctx.createGain();
+    this.gain.connect(this.ctx.destination);
+
+    // Quick attack envelope (5ms) to avoid clicking
+    this.gain.gain.setValueAtTime(0, t);
+    this.gain.gain.linearRampToValueAtTime(0.25, t + 0.005);
+
+    this.oscLow = this.ctx.createOscillator();
+    this.oscLow.frequency.value = low;
+    this.oscLow.type = 'sine';
+    this.oscLow.connect(this.gain);
+
+    this.oscHigh = this.ctx.createOscillator();
+    this.oscHigh.frequency.value = high;
+    this.oscHigh.type = 'sine';
+    this.oscHigh.connect(this.gain);
+
+    this.oscLow.start(t);
+    this.oscHigh.start(t);
+    this.activeKey = key;
+  }
+
+  stop() {
+    if (!this.ctx || !this.activeKey) return;
+    const t = this.ctx.currentTime;
+
+    // 30ms release envelope to avoid clicking
+    this.gain.gain.cancelScheduledValues(t);
+    this.gain.gain.setValueAtTime(this.gain.gain.value, t);
+    this.gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+
+    const stopTime = t + 0.035;
+    this.oscLow.stop(stopTime);
+    this.oscHigh.stop(stopTime);
+
+    // Schedule cleanup after the release
+    setTimeout(() => {
+      if (this.oscLow) { this.oscLow.disconnect(); this.oscLow = null; }
+      if (this.oscHigh) { this.oscHigh.disconnect(); this.oscHigh = null; }
+      if (this.gain) { this.gain.disconnect(); this.gain = null; }
+    }, 50);
+
+    this.activeKey = null;
+  }
+}
+
+const dtmfGen = new DTMFToneGenerator();
+
+// Wire up keypad buttons for press/release DTMF
+function initKeypadDTMF() {
+  const keys = document.querySelectorAll('.key[data-key]');
+  keys.forEach(btn => {
+    const key = btn.getAttribute('data-key');
+
+    const press = (e) => {
+      if (e.type === 'touchstart') e.preventDefault();
+      dtmfGen.start(key);
+      // Update display
+      if (!isCalling) {
+        dialString += key;
+        lcd.innerHTML = dialString + '<span class="cursor"></span>';
+      }
+      btn.style.transform = 'translateY(5px)';
+      btn.style.boxShadow = '0 0 0 var(--btn-shadow), inset 0 2px 6px rgba(0,0,0,0.2)';
+    };
+
+    const release = () => {
+      dtmfGen.stop();
+      btn.style.transform = '';
+      btn.style.boxShadow = '';
+    };
+
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('mouseup', release);
+    btn.addEventListener('mouseleave', release);
+    btn.addEventListener('touchend', release);
+    btn.addEventListener('touchcancel', release);
+  });
+}
+
+function keyPress(key) {
+  if (isCalling) return;
+  dialString += key;
+  lcd.innerHTML = dialString + '<span class="cursor"></span>';
+}
+
+async function makeCall() {
+  if (isCalling) {
+    if (audioCtx) { audioCtx.close().catch(() => {}); audioCtx = null; }
+    currentAudioBuffer = null;
+    isCalling = false;
+    dialString = '';
+    ctaBtn.textContent = 'Pick up and make a call';
+    ctaBtn.classList.remove('calling');
+    ledMsg.classList.remove('active-orange');
+    ledHold.classList.remove('active-red');
+    lcd.innerHTML = '<div class="scrolling-marquee"><span>*** CALL ENDED *** READY TO DIAL *** </span></div>';
+    return;
+  }
+
+  if (!gsmModule) { setStatus('WASM decoder not ready yet!'); return; }
+  if (gsmSamples.length === 0) { setStatus('No GSM samples available'); return; }
+
+  isCalling = true;
+  ctaBtn.textContent = 'Hang up';
+  ctaBtn.classList.add('calling');
+  ledMsg.classList.add('active-orange');
+  ledHold.classList.remove('active-red');
+
+  const msg = 'Call in progress...';
+  let i = 0;
+  lcd.innerHTML = '<span class="cursor"></span>';
+
+  const typeInterval = setInterval(() => {
+    if (!isCalling) { clearInterval(typeInterval); return; }
+    if (i < msg.length) {
+      lcd.innerHTML = msg.substring(0, i + 1) + '<span class="cursor"></span>';
+      i++;
+    } else {
+      clearInterval(typeInterval);
+      setTimeout(() => {
+        if (!isCalling) return;
+        lcd.innerHTML = '<div class="scrolling-marquee"><span>*** CALL IN PROGRESS *** LINE ACTIVE *** </span></div>';
+      }, 500);
+    }
+  }, 80);
+
+  const sampleName = gsmSamples[Math.floor(Math.random() * gsmSamples.length)];
+  setStatus('Loading ' + sampleName + '...');
+
+  try {
+    const resp = await fetch('gsm/' + sampleName);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const gsmData = new Uint8Array(await resp.arrayBuffer());
+
+    setStatus('Decoding via WASM...');
+    const pcmData = decodeGSM(gsmData);
+    const wavBlob = buildWAV(pcmData);
+    const wavUrl = URL.createObjectURL(wavBlob);
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const resp2 = await fetch(wavUrl);
+    const arrayBuffer = await resp2.arrayBuffer();
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    currentAudioBuffer = audioBuffer;
+
+    const source = audioCtx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioCtx.destination);
+    source.onended = () => {
+      if (isCalling) {
+        lcd.innerHTML = '<div class="scrolling-marquee"><span>*** CALL COMPLETED *** READY TO DIAL *** </span></div>';
+        ledMsg.classList.remove('active-orange');
+        ledHold.classList.add('active-red');
+        setTimeout(() => {
+          if (isCalling) {
+            isCalling = false;
+            dialString = '';
+            ctaBtn.textContent = 'Pick up and make a call';
+            ctaBtn.classList.remove('calling');
+            ledHold.classList.remove('active-red');
+            lcd.innerHTML = '<div class="scrolling-marquee"><span>*** WELCOME TO TELEWEB 2000 *** READY TO DIAL *** </span></div>';
+          }
+        }, 3000);
+      }
+    };
+    source.start(0);
+    setStatus('Playing: ' + sampleName);
+  } catch (e) {
+    console.error('Call failed:', e);
+    setStatus('Error: ' + e.message);
+    lcd.innerHTML = 'ERROR: ' + e.message;
+    isCalling = false;
+    ctaBtn.textContent = 'Pick up and make a call';
+    ctaBtn.classList.remove('calling');
+    ledMsg.classList.remove('active-orange');
+  }
+}
+
+loadWASM();
+loadSampleList();
+initKeypadDTMF();
+</script>
+
+</body>
+</html>
