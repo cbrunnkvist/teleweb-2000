@@ -641,7 +641,7 @@ class DTMFToneGenerator {
   }
 
   stop() {
-    if (!this.ctx || !this.activeKey) return;
+    if (!this.ctx || !this.activeKey || !this.gain) return;
     const t = this.ctx.currentTime;
 
     // 30ms release envelope to avoid clicking
