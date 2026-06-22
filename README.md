@@ -36,6 +36,6 @@ Single HTML file. No build step. No dependencies. 71 files total, 3.5 MB of hold
 
 The interactive exhibit was created by [@cbrunnkvist](https://github.com/cbrunnkvist). The code is mine.
 
-The IVR recordings are on-hold messages captured from US utility company phone lines. Their original recorder — whoever you are, somewhere on the internet — did the legwork of collecting and sharing these in GSM format around 2019. You deserve credit and I'd love to know who you are.
+The IVR recordings are on-hold messages captured from US utility company phone lines. Their original recorder — whoever you are, somewhere on the internet — did the legwork of collecting and sharing these in [GSM](https://en.wikipedia.org/wiki/Full_Rate) format around 2019. You deserve credit and I'd love to know who you are. Unfortunately the raw `.gsm` format has no metadata container — no tags, no headers, nothing — so there is no embedded provenance to recover.
 
 The libgsm WASM build inherits the original TU Berlin libgsm copyright.
