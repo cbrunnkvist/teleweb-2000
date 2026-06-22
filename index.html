@@ -749,8 +749,10 @@ async function makeCall() {
   rbHigh.connect(rbGain);
 
   const now = audioCtx.currentTime;
-  // Schedule 3 ringback bursts: on at 0s, off at 2s, on at 6s, off at 8s, on at 12s, off at 14s
-  for (let cycle = 0; cycle < 3; cycle++) {
+  // Pick random ringback duration: 1–6 seconds, different every call
+  const ringbackDuration = Math.floor(1000 + Math.random() * 5000);
+  const maxCycles = Math.ceil(ringbackDuration / 6000) + 1;
+  for (let cycle = 0; cycle < maxCycles; cycle++) {
     const onT = now + cycle * 6;
     const offT = onT + 2;
     rbGain.gain.setValueAtTime(0.15, onT);
@@ -762,7 +764,7 @@ async function makeCall() {
 
   lcd.innerHTML = '<div class="scrolling-marquee"><span>*** RINGING *** PLEASE HOLD *** </span></div>';
 
-  // Wait 6 seconds for ringback to play (one full cycle), then connect
+  // Wait random ringback duration, then connect
   setTimeout(async () => {
     if (!isCalling) {
       rbLow.stop(); rbHigh.stop(); rbGain.disconnect();
