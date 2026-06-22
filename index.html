@@ -728,6 +728,133 @@ async function makeCall() {
   ledMsg.classList.add('active-orange');
   ledHold.classList.remove('active-red');
 
+  // PHASE 1: DIALING
+  lcd.innerHTML = 'DIALING...<span class="cursor"></span>';
+  setStatus('Dialing...');
+
+  // PHASE 2: RINGBACK — authentic US ringback tone (440+480Hz, 2s on / 4s off)
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const rbGain = audioCtx.createGain();
+  rbGain.connect(audioCtx.destination);
+  rbGain.gain.value = 0.15;
+
+  const rbLow = audioCtx.createOscillator();
+  rbLow.type = 'sine';
+  rbLow.frequency.value = 440;
+  rbLow.connect(rbGain);
+
+  const rbHigh = audioCtx.createOscillator();
+  rbHigh.type = 'sine';
+  rbHigh.frequency.value = 480;
+  rbHigh.connect(rbGain);
+
+  const now = audioCtx.currentTime;
+  // Schedule 3 ringback bursts: on at 0s, off at 2s, on at 6s, off at 8s, on at 12s, off at 14s
+  for (let cycle = 0; cycle < 3; cycle++) {
+    const onT = now + cycle * 6;
+    const offT = onT + 2;
+    rbGain.gain.setValueAtTime(0.15, onT);
+    rbGain.gain.setValueAtTime(0, offT);
+  }
+
+  rbLow.start(now);
+  rbHigh.start(now);
+
+  lcd.innerHTML = '<div class="scrolling-marquee"><span>*** RINGING *** PLEASE HOLD *** </span></div>';
+
+  // Wait 6 seconds for ringback to play (one full cycle), then connect
+  setTimeout(async () => {
+    if (!isCalling) {
+      rbLow.stop(); rbHigh.stop(); rbGain.disconnect();
+      return;
+    }
+
+    // Fade out ringback
+    rbGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    rbGain.gain.setValueAtTime(rbGain.gain.value, audioCtx.currentTime);
+    rbGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+    rbLow.stop(audioCtx.currentTime + 0.15);
+    rbHigh.stop(audioCtx.currentTime + 0.15);
+
+    // PHASE 3: CONNECTED — show typewriter effect
+    const msg = 'Call in progress...';
+    let i = 0;
+    lcd.innerHTML = '<span class="cursor"></span>';
+
+    const typeInterval = setInterval(() => {
+      if (!isCalling) { clearInterval(typeInterval); return; }
+      if (i < msg.length) {
+        lcd.innerHTML = msg.substring(0, i + 1) + '<span class="cursor"></span>';
+        i++;
+      } else {
+        clearInterval(typeInterval);
+        setTimeout(() => {
+          if (!isCalling) return;
+          lcd.innerHTML = '<div class="scrolling-marquee"><span>*** CALL IN PROGRESS *** LINE ACTIVE *** </span></div>';
+        }, 500);
+      }
+    }, 80);
+
+    // PHASE 4: PLAY RANDOM UTILITY SAMPLE
+    const sampleName = gsmSamples[Math.floor(Math.random() * gsmSamples.length)];
+    setStatus('Connected: ' + sampleName);
+
+    try {
+      const resp = await fetch('gsm/' + sampleName);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const gsmData = new Uint8Array(await resp.arrayBuffer());
+
+      const pcmData = decodeGSM(gsmData);
+      const wavBlob = buildWAV(pcmData);
+      const wavUrl = URL.createObjectURL(wavBlob);
+
+      const resp2 = await fetch(wavUrl);
+      const arrayBuffer = await resp2.arrayBuffer();
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      currentAudioBuffer = audioBuffer;
+
+      const source = audioCtx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioCtx.destination);
+      source.onended = () => {
+        if (isCalling) {
+          lcd.innerHTML = '<div class="scrolling-marquee"><span>*** CALL COMPLETED *** READY TO DIAL *** </span></div>';
+          ledMsg.classList.remove('active-orange');
+          ledHold.classList.add('active-red');
+          setTimeout(() => {
+            if (isCalling) {
+              isCalling = false;
+              dialString = '';
+              ctaBtn.textContent = 'Pick up and make a call';
+              ctaBtn.classList.remove('calling');
+              ledHold.classList.remove('active-red');
+              lcd.innerHTML = '<div class="scrolling-marquee"><span>*** WELCOME TO TELEWEB 2000 *** READY TO DIAL *** </span></div>';
+            }
+          }, 3000);
+        }
+      };
+      source.start(0);
+    } catch (e) {
+      console.error('Call failed:', e);
+      setStatus('Error: ' + e.message);
+      lcd.innerHTML = 'ERROR: ' + e.message;
+      isCalling = false;
+      ctaBtn.textContent = 'Pick up and make a call';
+      ctaBtn.classList.remove('calling');
+      ledMsg.classList.remove('active-orange');
+    }
+  }, 6000);
+}
+
+  if (!gsmModule) { setStatus('WASM decoder not ready yet!'); return; }
+  if (gsmSamples.length === 0) { setStatus('No GSM samples available'); return; }
+
+  isCalling = true;
+  ctaBtn.textContent = 'Hang up';
+  ctaBtn.classList.add('calling');
+  ledMsg.classList.add('active-orange');
+  ledHold.classList.remove('active-red');
+
   const msg = 'Call in progress...';
   let i = 0;
   lcd.innerHTML = '<span class="cursor"></span>';
