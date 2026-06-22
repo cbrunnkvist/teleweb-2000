@@ -10,6 +10,7 @@ Yes, it works.
 
 ## Features
 
+- **Authentic US ringback tone** — 440 Hz + 480 Hz, 2 seconds on / 4 seconds off, generated on the fly via Web Audio API before the "call connects"
 - **Real-time DTMF tones** — Web Audio API sine wave generation with proper frequency pairs
 - **In-browser GSM 06.10 decoder** — libgsm compiled to WebAssembly; the `.gsm` recordings are decoded entirely client-side
 - **66 utility company IVR samples** — call centers from Anaheim to Montana, all circa 2018–2020
@@ -29,10 +30,7 @@ Single HTML file. No build step. No dependencies. 71 files total, 3.5 MB of hold
 
 ## Technical details
 
-- DTMF tones are generated on the fly using two `OscillatorNode`s per key (ITU-T frequency pairs) with attack/release envelopes to prevent clicking
-- GSM decoding happens frame-by-frame: each 33-byte frame produces 160 PCM samples at 8 kHz
-- Decoded PCM is wrapped into a WAV blob and played via `AudioContext.decodeAudioData()`
-- The entire interface scales via CSS `transform: scale()` calculated from `offsetWidth`/`offsetHeight` — no media queries
+- Call flow: dial → **6 seconds of authentic US ringback** (440+480 Hz) → typewriter "Call in progress..." → random utility company IVR plays → "CALL COMPLETED" → auto-hangup
 
 ## License
 
