@@ -14,9 +14,9 @@
 <meta name="twitter:title" content="TeleWeb 2000 — Y2K Desktop IP Phone">
 <meta name="twitter:description" content="A Y2K-era desk phone simulator. Dial DTMF tones, then get connected to a real US utility company hold recording.">
 <meta name="twitter:image" content="https://cbrunnkvist.github.io/teleweb-2000/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-
   :root {
     --beige: #d4c4a8;
     --dark-beige: #b8a88a;
@@ -32,6 +32,9 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* Buttons and inputs don't inherit font from body — force it */
+  button, input { font-family: 'VT323', monospace; }
 
   html, body {
     height: 100%;
